@@ -6,6 +6,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 namespace CL {
 
@@ -14,7 +15,7 @@ namespace CL {
 
     struct ClintOptions {
         std::string prefix = "=> ";
-        bool showDuration = true;
+        bool showDuration = false;
     };
 
     class Clint {
@@ -38,13 +39,22 @@ namespace CL {
             }
         }
         void SetMode(const std::string& name, clintfuncptr ptr) {
-            internalModes[name] = ptr;
+            internalmodes[name] = ptr;
         }
         void SetMode(const std::vector<std::string>& names, clintfuncptr ptr) {
             for(const auto& name: names) {
-                internalModes[name] = ptr;
+                internalmodes[name] = ptr;
             }
         }
+        void SetMode(const std::string& name, Clint* cl) {
+            submodes[name] = cl;
+        }
+        void SetMode(const std::vector<std::string>& names, Clint* cl) {
+            for(const auto& name: names) {
+                submodes[name] = cl;
+            }
+        }
+
         void SetOptions(const ClintOptions& opts) {
             options = opts;
         }
@@ -52,9 +62,37 @@ namespace CL {
             this->MainCycle();
         }
 
-        Clint& operator()(const std::string& mode, const std::vector<std::string>& args) {
-            modes.at(mode)(args);
-            return *this;
+        void Exec(const std::vector<std::string>& args) {
+            if(args.empty()) {
+                return;
+            }
+            std::string name = args[0];
+            std::vector<std::string> subargs(args.begin() + 1, args.end());
+
+            this->Exec(name, subargs);
+        }
+        void Exec(const std::string& name, const std::vector<std::string>& args) {
+            if(internalmodes.find(name) != internalmodes.end()) {
+                (this->*(internalmodes[name]))(args);
+                return;
+            } else if(modes.find(name) != modes.end()) {
+                auto startTime = std::chrono::steady_clock::now();
+                modes[name](args);
+                auto endTime = std::chrono::steady_clock::now();
+                auto diffTime = endTime - startTime;
+                if(options.showDuration) {
+                    std::cout << "\nExecution: "
+                              << std::chrono::duration<double, std::milli>(diffTime).count()
+                              << "\n";
+                }
+                return;
+            } else if(submodes.find(name) != submodes.end()) {
+                submodes[name]->Exec(args);
+                return;
+            } else {
+                std::cout << name << " is not defined\n";
+                return;
+            }
         }
 
         Clint& operator<<(const std::string& str) {
@@ -72,57 +110,40 @@ namespace CL {
                 std::stringstream ss(line);
 
                 std::vector<std::string> args;
-                std::string name, arg;
-                ss >> name;
+                std::string arg;
                 while(ss >> arg) {
                     args.push_back(arg);
                 }
 
-                if(!this->ParseInternal(name, args)) {
-                    if(name.empty() || modes.find(name) == modes.end()) {
-                        (*this) << name << " is not defined\n";
-                    } else {
-                        auto startTime = std::chrono::steady_clock::now();
-                        modes.at(name)(args);
-                        auto endTime = std::chrono::steady_clock::now();
-                        auto diffTime = endTime - startTime;
-                        if(options.showDuration) {
-                            std::cout << "\nExecution: "
-                                      << std::chrono::duration<double, std::milli>(diffTime).count()
-                                      << "\n";
-                        }
-                    }
-                }
+                this->Exec(args);
             }
             return 0;
         }
 
-        int ParseInternal(const std::string& name, funcargs args) {
-            if(name.empty() || internalModes.find(name) == internalModes.end()) {
-                return 0;
-            }
-            (this->*(internalModes[name]))(args);
-            return 1;
-        }
-
         void Help(funcargs) {
-            (*this) << "User modes:     ";
-            for(const auto& [name, func]: modes) {
-                (*this) << name << " ";
+            std::vector<std::string> allmodes;
+            for(const auto&[name, func]: modes) {
+                allmodes.push_back(name);
             }
-            (*this) << "\n";
-            (*this) << "Internal modes: ";
-            for(const auto& [name, func]: internalModes) {
-                (*this) << name << " ";
+            for(const auto&[name, func]: submodes) {
+                allmodes.push_back(name);
             }
-            (*this) << "\n";
+            for(const auto&[name, func]: internalmodes) {
+                allmodes.push_back(name);
+            }
+            std::sort(allmodes.begin(), allmodes.end());
+
+            for(const auto& mode: allmodes) {
+                (*this) << mode << "\n";
+            }
         }
         void Exit(funcargs) {
             exit = true;
         }
 
         std::map<std::string, funcptr> modes;
-        std::map<std::string, clintfuncptr> internalModes;
+        std::map<std::string, Clint*> submodes;
+        std::map<std::string, clintfuncptr> internalmodes;
         ClintOptions options;
         bool exit = false;
     };

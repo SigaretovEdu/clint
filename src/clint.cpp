@@ -4,39 +4,38 @@
 #include <chrono>
 #include <thread>
 
-void printhi(CL::funcargs args) {
-    if(args.size() == 0) {
-        std::cout << "no args presented\n";
-        return;
-    }
-    std::cout << "Hi, " << args[0] << "!\n";
+void f1(CL::funcargs funcargs) {
+    std::cout << "f1\n";
 }
-
-void funnymatrix(CL::funcargs args) {
-    for(size_t i = 0; i < 10; ++i) {
-        for(size_t j = 0; j < 10; ++j) {
-            std::cout << "#";
-        }
-        std::cout<<"\n";
-    }
+void f2(CL::funcargs funcargs) {
+    std::cout << "f2\n";
 }
-
-void longFunction(CL::funcargs args) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(5100));
-    std::cout<<"I finished!\n";
+void f3(CL::funcargs funcargs) {
+    std::cout << "f3\n";
+}
+void b1(CL::funcargs funcargs) {
+    std::cout << "b1\n";
+}
+void b2(CL::funcargs funcargs) {
+    std::cout << "b2\n";
+}
+void b3(CL::funcargs funcargs) {
+    std::cout << "b3\n";
 }
 
 int main() {
-    CL::Clint clint;
-    clint.SetMode("hi", &printhi);
-    clint.SetMode("matrix", &funnymatrix);
-    clint.SetMode("long", &longFunction);
+    CL::Clint clintSub;
+    clintSub.SetMode("f1", &f1);
+    clintSub.SetMode("f2", &f2);
+    clintSub.SetMode("f3", &f3);
 
-    CL::ClintOptions clOptions;
-    clOptions.showDuration = false;
-    clint.SetOptions(clOptions);
+    CL::Clint clintMain;
+    clintMain.SetMode("b1", &b1);
+    clintMain.SetMode("b2", &b2);
+    clintMain.SetMode("b3", &b3);
+    clintMain.SetMode("clint", &clintSub);
 
-    clint.Start();
+    clintMain.Start();
 
     return 0;
 }
