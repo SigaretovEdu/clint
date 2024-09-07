@@ -6,8 +6,4 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(clint)
 
-file(GLOB_RECURSE SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "src/*.cpp")
-
-#add_compile_options(-Wall -Wextra -Wpedantic -g)
-
-add_executable(${PROJECT_NAME} ${SOURCES})
+add_executable(${PROJECT_NAME} "src/clint.cpp")

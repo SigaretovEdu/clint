@@ -1,41 +1,33 @@
 #include "clint.h"
 
 #include <iostream>
-#include <chrono>
-#include <thread>
 
-void f1(CL::funcargs funcargs) {
-    std::cout << "f1\n";
+int Say1(std::vector<std::string>& args) {
+    std::cout << "1!\n";
+    return 1;
 }
-void f2(CL::funcargs funcargs) {
-    std::cout << "f2\n";
+int Say2(std::vector<std::string>& args) {
+    std::cout << "2!\n";
+    return 1;
 }
-void f3(CL::funcargs funcargs) {
-    std::cout << "f3\n";
+int Say3(std::vector<std::string>& args) {
+    std::cout << "3!\n";
+    return 1;
 }
-void b1(CL::funcargs funcargs) {
-    std::cout << "b1\n";
-}
-void b2(CL::funcargs funcargs) {
-    std::cout << "b2\n";
-}
-void b3(CL::funcargs funcargs) {
-    std::cout << "b3\n";
+int Say4(std::vector<std::string>& args) {
+    std::cout << "4!\n";
+    return 1;
 }
 
-int main() {
-    CL::Clint clintSub;
-    clintSub.SetMode("f1", &f1);
-    clintSub.SetMode("f2", &f2);
-    clintSub.SetMode("f3", &f3);
+int main(int argc, char** argv) {
+    CL::ModeViewer viewer1, viewer2;
+    viewer1.AddMode("say1", &Say1);
+    viewer1.AddMode("say2", &Say2);
+    viewer2.AddMode("say3", &Say3);
+    viewer2.AddMode("say4", &Say4);
+    viewer1.AddMode("say34", viewer2);
 
-    CL::Clint clintMain;
-    clintMain.SetMode("b1", &b1);
-    clintMain.SetMode("b2", &b2);
-    clintMain.SetMode("b3", &b3);
-    clintMain.SetMode("clint", &clintSub);
-
-    clintMain.Start();
-
+    CL::Clint clint(viewer1, CL::ClintOptions());
+    clint.Run();
     return 0;
 }
